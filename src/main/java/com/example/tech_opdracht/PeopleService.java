@@ -42,6 +42,14 @@ public class PeopleService {
         establishRelationships(person);
     }
 
+    public synchronized void deletePerson(Person person) {
+        final var existingPerson = repository.get(person.getId());
+
+        existingPerson.ifPresent(this::removeAllRelationships);
+
+        repository.delete(person.getId());
+    }
+
     /**
      * Remove all relationships for a person (used during updates)
      */

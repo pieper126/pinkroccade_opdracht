@@ -23,8 +23,6 @@ class PeopleServiceTest {
    void adheresToCriteria() {
        final var service = new PeopleService(new PeopleRepository());
 
-
-       // Create a family that satisfies the pattern
        Person parent1 = new Person(parentId1);
        parent1.setPartnerId(parentId2);
        parent1.setChildrenIds(Set.of(childId1, childId2, childId3));
@@ -232,5 +230,80 @@ class PeopleServiceTest {
         final var result = service.getMatchingPeople();
 
         assertEquals(0, result.size(), "has no partner");
+    }
+
+    @Test
+    void deletingCriticalNodeLeadsToCriteriaFailing() {
+        final var service = new PeopleService(new PeopleRepository());
+
+        Person parent1 = new Person(parentId1);
+        parent1.setPartnerId(parentId2);
+        parent1.setChildrenIds(Set.of(childId1, childId2, childId3));
+
+        Person parent2 = new Person(parentId2);
+        parent2.setPartnerId(parentId1);
+        parent2.setBirthDate(of(1980, 1, 1));
+        parent2.setChildrenIds(Set.of(childId1, childId2, childId3));
+
+        Person child1 = new Person(childId1);
+        child1.setBirthDate(of(2010, 1, 1));
+        child1.setParentIds(Set.of(parentId1, parentId2));
+
+        Person child2 = new Person(childId2);
+        child2.setBirthDate(of(2005, 1, 1));
+        child2.setParentIds(Set.of(parentId1, parentId2));
+
+        Person youngest = new Person(childId3);
+        youngest.setBirthDate(LocalDate.now().minus(1, ChronoUnit.YEARS));
+        youngest.setParentIds(Set.of(parentId1, parentId2));
+
+        service.addOrUpdatePerson(parent1);
+        service.addOrUpdatePerson(parent2);
+        service.addOrUpdatePerson(child1);
+        service.addOrUpdatePerson(child2);
+        service.addOrUpdatePerson(youngest);
+
+        service.deletePerson(youngest);
+        final var result = service.getMatchingPeople();
+
+        assertEquals(0, result.size(), "should no longer adhere to criteria!");
+    }
+
+    @Test
+    void deletingAndAddingAgainRemovesTheDelete() {
+        final var service = new PeopleService(new PeopleRepository());
+
+        Person parent1 = new Person(parentId1);
+        parent1.setPartnerId(parentId2);
+        parent1.setChildrenIds(Set.of(childId1, childId2, childId3));
+
+        Person parent2 = new Person(parentId2);
+        parent2.setPartnerId(parentId1);
+        parent2.setBirthDate(of(1980, 1, 1));
+        parent2.setChildrenIds(Set.of(childId1, childId2, childId3));
+
+        Person child1 = new Person(childId1);
+        child1.setBirthDate(of(2010, 1, 1));
+        child1.setParentIds(Set.of(parentId1, parentId2));
+
+        Person child2 = new Person(childId2);
+        child2.setBirthDate(of(2005, 1, 1));
+        child2.setParentIds(Set.of(parentId1, parentId2));
+
+        Person youngest = new Person(childId3);
+        youngest.setBirthDate(LocalDate.now().minus(1, ChronoUnit.YEARS));
+        youngest.setParentIds(Set.of(parentId1, parentId2));
+
+        service.addOrUpdatePerson(parent1);
+        service.addOrUpdatePerson(parent2);
+        service.addOrUpdatePerson(child1);
+        service.addOrUpdatePerson(child2);
+        service.addOrUpdatePerson(youngest);
+
+        service.deletePerson(youngest);
+        service.addOrUpdatePerson(youngest);
+        final var result = service.getMatchingPeople();
+
+        assertEquals(2, result.size(), "should once again be known");
     }
 }
