@@ -79,44 +79,49 @@ public class PeopleService {
      * Establish bidirectional relationships for a person
      */
     private void establishRelationships(Person person) {
-        final var personId = person.getId();
+        addPartnerRelationship(person);
+        addParentRelationshipToChildren(person);
+        addChildrenToParents(person);
+    }
 
-        // Establish partner relationship
+    private void addPartnerRelationship(Person person) {
         if (person.getPartnerId().isPresent()) {
             final var maybePartner = repository.get(person.getPartnerId().get());
 
             if (maybePartner.isEmpty()) {
                 final var partner = new Person(person.getPartnerId().get());
-                partner.setPartnerId(personId);
+                partner.setPartnerId(person.getId());
                 repository.put(partner);
             } else {
-                maybePartner.get().setPartnerId(personId);
+                maybePartner.get().setPartnerId(person.getId());
             }
         }
+    }
 
-        // Establish parent-child relationships
+    private void addParentRelationshipToChildren(Person person) {
         for (final var childId : person.getChildrenIds()) {
             final var maybeChild = repository.get(childId);
 
             if (maybeChild.isEmpty()) {
                 final var child = new Person(childId);
-                child.addParent(personId);
+                child.addParent(person.getId());
                 repository.put(child);
             } else {
-                maybeChild.get().addParent(personId);
+                maybeChild.get().addParent(person.getId());
             }
         }
+    }
 
-        // Establish parent relationship
+    private void addChildrenToParents(Person person) {
         for (final var parentId : person.getParentIds()) {
             final var maybeParent = repository.get(parentId);
 
             if (maybeParent.isEmpty()) {
                 final var parent = new Person(parentId);
-                parent.addChild(personId);
+                parent.addChild(person.getId());
                 repository.put(parent);
             } else {
-                maybeParent.get().addChild(personId);
+                maybeParent.get().addChild(person.getId());
             }
         }
     }
